@@ -1,3 +1,5 @@
+"use client";
+
 import { ApiResponse } from '@/service/model/api-response';
 import { UserAccount } from '@/service/model/user-account';
 import { useEffect, useState } from 'react';

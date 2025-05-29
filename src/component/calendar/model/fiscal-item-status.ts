@@ -1,0 +1,1 @@
+export type FiscalItemStatus = 'Active' | 'Draft' | 'Removed';
