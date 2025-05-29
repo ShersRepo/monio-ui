@@ -1,8 +1,7 @@
 import React from 'react';
-import { FieldErrorText, FieldRoot, Input } from '@chakra-ui/react';
+import { Button, FieldErrorText,FieldLabel, FieldRoot, FieldsetRoot, Input, Textarea } from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { newFiscalItemDtoSchema } from '@/components/feature/fiscal-calendar/tool-panel-fiscal-item-form';
 import { useAuthContext } from '@/global/authentication-provider';
 import { z, ZodSchema } from 'zod';
 import { apiPOST } from '@/service/api-service';
@@ -16,7 +15,7 @@ export interface NewLedgerDto {
 	comment: string | null;
 }
 
-export const newLedgerItem: ZodSchema = z.strictObject({
+export const newLedgerItemSchema: ZodSchema = z.strictObject({
 	name: z.string( { invalid_type_error: "Not a valid name" })
 		.nonempty("Name is required")
 		.max(255, "Name is too long"),
@@ -29,13 +28,13 @@ export const newLedgerItem: ZodSchema = z.strictObject({
 export default function LedgerCreateForm(): React.ReactNode {
 	const { user } = useAuthContext();
 
-	const { register, handleSubmit, formState: { errors } } = useForm<NewLedgerDto>({
+	const { register, handleSubmit, formState: { errors, isDirty } } = useForm<NewLedgerDto>({
 		defaultValues: {
 			name: "",
 			description: null,
 			comment: null
 		},
-		resolver: zodResolver(newFiscalItemDtoSchema),
+		resolver: zodResolver(newLedgerItemSchema),
 		mode: 'onBlur'
 	});
 
@@ -59,31 +58,35 @@ export default function LedgerCreateForm(): React.ReactNode {
 	}
 
 	return (
-		<Stack w={"full"} p={"4"} direction={"row"}>
+		<form onSubmit={handleSubmit(attemptCreateNewLedger)}>
 
-			<form onSubmit={handleSubmit(attemptCreateNewLedger)}>
+			<FieldsetRoot w={"full"} p={"4"} direction={"row"}>
 
-				<FieldRoot invalid={!!errors.name}>
+				<FieldRoot invalid={!!errors.name} w={"500px"}>
 
-					<Input {...register("name")} placeholder={"Ledger Name"} />
+					<FieldLabel>Ledger Name</FieldLabel>
+
+					<Input {...register("name")} placeholder={"Enter your ledger name here"} />
 
 					<FieldErrorText>{errors.name?.message}</FieldErrorText>
 				</FieldRoot>
 
+
 				<FieldRoot invalid={!!errors.description}>
 
-					<Input {...register("description")} placeholder={"Description"} />
+					<FieldLabel>Description</FieldLabel>
+
+					<Textarea {...register("description")} placeholder={"Here you can add a description"} />
 
 					<FieldErrorText>{errors.description?.message}</FieldErrorText>
 				</FieldRoot>
 
-				<FieldRoot invalid={!!errors.comment}>
+			</FieldsetRoot>
 
-					<Input {...register("comment")} placeholder={"Comment"} />
+			<Stack w={"full"} p={"4"} direction={"row"}>
 
-					<FieldErrorText>{errors.comment?.message}</FieldErrorText>
-				</FieldRoot>
-			</form>
-		</Stack>
+				<Button type={"submit"} colorPalette="yellow" disabled={!isDirty}>Start Ledger</Button>
+			</Stack>
+		</form>
 	)
 }
