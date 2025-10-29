@@ -1,8 +1,9 @@
 import { ApiResponse } from '@/service/model/api-response';
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
+import { APP_CONFIG } from '../../env.config';
 
-const baseUrl = 'http://localhost:8080/api';
+const baseUrl = APP_CONFIG.api.baseUrl;
 
 const API_FAIL_RESPONSE: ApiResponse<null> = {
 	data: null,
