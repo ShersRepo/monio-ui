@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, CollapsibleContent, CollapsibleRoot, CollapsibleTrigger, For } from '@chakra-ui/react';
 import ToolPanelNewForm from '@/components/feature/fiscal-calendar/tool-panel-fiscal-item-form';
+import ToolPanelDraftList from '@/components/feature/fiscal-calendar/tool-panel-draft-list';
 
 export interface FiscalToolPanelMenu {
 	title: string;
@@ -17,7 +18,7 @@ const MOCK_TOOL_PANEL_ITEM: FiscalToolPanelMenu[] = [
 	},
 	{
 		title: "Drafts",
-		content: "Shows the draft creations which aren't set to active",
+		content: <ToolPanelDraftList></ToolPanelDraftList>,
 		defaultOpen: true,
 	},
 	{
@@ -37,7 +38,6 @@ function PanelHeader({title}: Readonly<{title: string}>): React.ReactNode {
 			textAlign={"start"}
 			cursor={"pointer"}
 			marginBottom={"10px"}
-
 		>
 			{title}
 		</Box>

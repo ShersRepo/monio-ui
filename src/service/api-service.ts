@@ -1,5 +1,5 @@
 import { ApiResponse } from '@/service/model/api-response';
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import toast from 'react-hot-toast';
 
 const baseUrl = 'http://localhost:8080/api';
@@ -8,7 +8,7 @@ const API_FAIL_RESPONSE: ApiResponse<null> = {
 	data: null,
 	status: 500,
 	message: "Something went wrong with our comms :(",
-	error: []
+	errors: []
 }
 
 const requestConfig: AxiosRequestConfig<any> = {
@@ -18,6 +18,13 @@ const requestConfig: AxiosRequestConfig<any> = {
 	},
 }
 
+/**
+ *
+ * @param {string} url endpoint
+ * @param {P} data payload
+ * @param {boolean} withErrorMessage whether to show api error
+ * @returns {Promise<ApiResponse<T | null>>}
+ */
 export const apiPOST = async <P, T> (url: string, data: P, withErrorMessage: boolean = true): Promise<ApiResponse<T | null>> => {
 	try {
 		const response: AxiosResponse<ApiResponse<T>> = await axios.post<ApiResponse<T>>(
@@ -31,7 +38,27 @@ export const apiPOST = async <P, T> (url: string, data: P, withErrorMessage: boo
 		if (withErrorMessage) {
 			toast.error(API_FAIL_RESPONSE.message);
 		}
-		return {...API_FAIL_RESPONSE, data: null} as ApiResponse<T>;
+		const errorResponse = error as AxiosError<ApiResponse<T>>;
+		return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+	}
+}
+
+export const apiPATCH = async <P, T> (url: string, data: P, withErrorMessage: boolean = true): Promise<ApiResponse<T | null>> => {
+	try {
+		const response: AxiosResponse<ApiResponse<T>> = await axios.patch<ApiResponse<T>>(
+			baseUrl + url,
+			JSON.stringify(data),
+			{ ...requestConfig, method: 'PATCH' }
+		);
+
+		return response.data;
+	} catch (error) {
+		if (withErrorMessage) {
+			toast.error(API_FAIL_RESPONSE.message);
+		}
+		const errorResponse = error as AxiosError<ApiResponse<T>>;
+		console.log(errorResponse);
+		return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
 	}
 }
 
@@ -47,7 +74,8 @@ export const apiGET = async <T> (url: string, withErrorMessage: boolean = true):
 		if (withErrorMessage) {
 			toast.error(API_FAIL_RESPONSE.message);
 		}
-		return {...API_FAIL_RESPONSE, data: null} as ApiResponse<T>;
+		const errorResponse = error as AxiosError<T>;
+		return { ...API_FAIL_RESPONSE, ...errorResponse?.response?.data } as ApiResponse<T>;
 	}
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useCallback } from 'react';
 import { FieldRoot, Input, FieldErrorText, Fieldset, FieldsetRoot, InputGroup, Box, SegmentGroupRoot, SegmentGroupItems, SegmentGroupIndicator } from '@chakra-ui/react';
 import { Controller, useForm } from 'react-hook-form';
 import { z, ZodSchema } from 'zod';
@@ -7,159 +7,220 @@ import { Stack } from '@chakra-ui/react/stack';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { currencyConverter } from '@/util/number-util';
+import { useFiscalItemDraftProvider } from '@/app/budget-planner/provider/fiscal-item-draft-provider';
+import { useLedgerProvider } from '@/app/budget-planner/provider/ledger-provider';
+import { apiPOST, apiPATCH } from '@/service/api-service';
+import toast from 'react-hot-toast';
+import { setFormErrors } from '@/util/error-form-util';
 
 export const newFiscalItemDtoSchema: ZodSchema = z.object({
 	name: z.string( { invalid_type_error: "Not a valid name" }),
 	amount: z.number( { invalid_type_error: "Not a valid amount" })
 		.nonnegative("Must be a positive amount"),
 	date: z.date( { invalid_type_error: "Not a valid date" }),
-	isExpenditure: z.boolean( {
+	expenditure: z.boolean( {
 		coerce: false,
 	 	invalid_type_error: "Invalid expenditure type",
 	 	message: "Expenditure type is required"
 	})
 });
 
-export interface NewFiscalItemDto {
+export interface FiscalItemDraftDto {
+	id: string | null;
 	name: string | null;
 	description: string | null;
 	amount: number;
 	date: Date;
-	isExpenditure: boolean;
+	expenditure: boolean;
+	ledgerId: string | null;
+}
+
+export interface FiscalCreateDraftDto {
+	name: string | null;
+	description: string | null;
+	amount: number;
+	expenditure: boolean;
 }
 
 const getFirstDayOfMonth = (monthToCheck: Date): Date => {
 	return new Date(monthToCheck.getFullYear(), monthToCheck.getMonth(), 1);
 }
 
-export type CurrentFormAction = "new" | "editing" | "applying";
-
 export type ExpenseOrIncome = "Expense" | "Income";
 
 export default function ToolPanelFiscalItemForm(): React.ReactNode {
 	const [ dateSelection, setDateSelection ] = React.useState<Date | null>(getFirstDayOfMonth(new Date()));
-	const [ currentFormAction, setCurrentFormAction ] = React.useState<CurrentFormAction>("new");
 	const expenseOrIncomeOption: ExpenseOrIncome[] = ["Expense", "Income"];
+	const { setFiscalItemInEdit, addNewFiscalItem, fiscalItemInEdit, updateFiscalItem } = useFiscalItemDraftProvider();
+	const { ledger } = useLedgerProvider();
 
-	const { control, register, handleSubmit, formState: { errors } } = useForm<NewFiscalItemDto>({
+	const { control, register, reset, formState: { errors }, setError, getValues } = useForm<FiscalItemDraftDto>({
 		defaultValues: {
-			name: null,
-			description: null,
-			amount: 0.00,
+			id: null,
+			name: '',
+			description: '',
+			amount: 0,
 			date: getFirstDayOfMonth(new Date()),
-			isExpenditure: false
+			expenditure: false,
+			ledgerId: null
 		},
 		resolver: zodResolver(newFiscalItemDtoSchema),
-		mode: 'onBlur'
+		mode: 'onBlur',
 	});
 
-	const handleDateChange = (date: Date | null): void => {
-		if (null === date) {
-			setDateSelection(getFirstDayOfMonth(new Date()));
-		} else {
-			setDateSelection(date);
+	const handleFormBlur = useCallback(() => {
+		const values: FiscalItemDraftDto = getValues();
+		//console.log(values, fiscalItemInEdit);
+		if (values.id) {
+			storeDraftItemChange(values);
+		} else if (values !== fiscalItemInEdit) {
+			storeNewDraftItem(values);
 		}
+	}, [fiscalItemInEdit, getValues, updateFiscalItem, setFiscalItemInEdit, addNewFiscalItem]);
+
+	const storeNewDraftItem = (values: FiscalItemDraftDto): void => {
+		const itemToStore: FiscalCreateDraftDto = { ...values };
+		apiPOST<FiscalCreateDraftDto, FiscalItemDraftDto>('/ledger/' + ledger?.id + '/fiscal-draft', itemToStore, false)
+			.then(response => {
+				if (response.status === 201 && response.data != null) {
+					reset(
+						response.data,
+						{
+							keepDirty: true,
+							keepErrors: true,
+							keepIsSubmitted: true,
+							keepTouched: true,
+							keepDirtyValues: true
+						}
+					);
+					setFiscalItemInEdit(response.data);
+					addNewFiscalItem(response.data);
+					toast.success("Draft item created");
+				} else if (response.errors?.length > 0) {
+					setFormErrors(response.errors, setError);
+					toast.error("Please fix the errors before saving changes");
+				}
+				else if (response.status === 400) {
+					console.log(response.errors);
+					toast.error("Error creating draft item");
+				}
+			});
+	}
+
+	const storeDraftItemChange = (values: FiscalItemDraftDto): void => {
+		const itemToStore: FiscalItemDraftDto = { ...values };
+		itemToStore.ledgerId = ledger?.id ?? null;
+
+		apiPATCH<FiscalItemDraftDto, FiscalItemDraftDto>('/ledger/fiscal/fiscal-draft', itemToStore, false)
+			.then((response) => {
+				if (response.status === 200 && response.data != null) {
+					updateFiscalItem(response.data);
+				} else if (response.errors?.length > 0) {
+					setFormErrors(response.errors, setError);
+					toast.error("Please fix the errors before saving changes");
+				} else {
+					toast.error("Error updating changes on draft item");
+				}
+			});
 	}
 
 	const expenseValueToIsExpenditure = (value: string | null): boolean => value === "Expense";
 
 	const isExpenditureToExpenseValue = (value: boolean): ExpenseOrIncome => value ? "Expense" : "Income";
 
-	const patchForm = (): void => {
-		console.log("patching form");
-	}
-
 	return (
-		<FieldsetRoot>
+		<form onBlur={handleFormBlur}>
+			<FieldsetRoot>
 
-			<Stack>
+				<Stack>
 
-				<Fieldset.Legend>New payment</Fieldset.Legend>
+					<Fieldset.Legend>New payment</Fieldset.Legend>
 
-				<Fieldset.HelperText>
-					Set details for a new payment.
-				</Fieldset.HelperText>
-		   	</Stack>
+					<Fieldset.HelperText>
+						Set details for a new payment.
+					</Fieldset.HelperText>
+				</Stack>
 
-			<FieldRoot invalid={!!errors.name}>
+				<FieldRoot invalid={!!errors.name}>
 
-				<Input {...register("name")} placeholder={"Payment For"} onBlur={patchForm} />
+					<Input {...register("name")} placeholder={"Payment For"} />
 
-				<FieldErrorText>{errors.name?.message}</FieldErrorText>
-			</FieldRoot>
+					<FieldErrorText>{errors.name?.message}</FieldErrorText>
+				</FieldRoot>
 
-			<FieldRoot invalid={!!errors.description}>
-
-				<Input
-					{...register("description")}
-					placeholder={"Description"}
-				/>
-
-				<FieldErrorText>{errors.description?.message}</FieldErrorText>
-			</FieldRoot>
-
-			<FieldRoot invalid={!!errors.amount}>
-
-				<InputGroup startAddon="£" endAddon="GBP">
+				<FieldRoot invalid={!!errors.description}>
 
 					<Input
-						{
-							...register(
-								"amount",
-								{ setValueAs: currencyConverter }
-							)
-						}
-						step={"0.01"}
-						placeholder={"0.00"}
-						min={0}
-						type={"number"}
+						{...register("description")}
+						placeholder={"Description"}
 					/>
-				</InputGroup>
 
-				<FieldErrorText>{errors.amount?.message}</FieldErrorText>
-			</FieldRoot>
+					<FieldErrorText>{errors.description?.message}</FieldErrorText>
+				</FieldRoot>
 
-			<DatePicker
-				className={"!p-2 !border-1 !border-gray-200 !outline-gray-400 !rounded-sm !text-sm"}
-				isClearable={false}
-				selected={dateSelection}
-				adjustDateOnChange={true}
-				onChange={setDateSelection}
-				placeholderText={"Payment date"}
-				dateFormat={"dd/MM/yyyy"}
-			>
+				<FieldRoot invalid={!!errors.amount}>
 
-				<Box color={"gray.600"}>Payment date</Box>
-			</DatePicker>
+					<InputGroup startAddon="£" endAddon="GBP">
 
-			<Controller
-				control={control}
-		  		name="isExpenditure"
-		  		render={({ field }) => (
-					<FieldRoot
-						invalid={!!errors.isExpenditure}
-					>
+						<Input
+							{
+								...register(
+									"amount",
+									{ setValueAs: currencyConverter }
+								)
+							}
+							step={"0.01"}
+							placeholder={"0.00"}
+							min={0}
+							type={"number"}
+						/>
+					</InputGroup>
 
-						<SegmentGroupRoot
-							name={field.name}
-							onBlur={field.onBlur}
-							size={"lg"}
-							value={isExpenditureToExpenseValue(field.value)}
-							onValueChange={({value}) => field.onChange(expenseValueToIsExpenditure(value))}
+					<FieldErrorText>{errors.amount?.message}</FieldErrorText>
+				</FieldRoot>
+
+				<DatePicker
+					className={"!p-2 !border-1 !border-gray-200 !outline-gray-400 !rounded-sm !text-sm"}
+					isClearable={false}
+					selected={dateSelection}
+					adjustDateOnChange={true}
+					onChange={setDateSelection}
+					placeholderText={"Payment date"}
+					dateFormat={"dd/MM/yyyy"}
+				>
+
+					<Box color={"gray.600"}>Payment date</Box>
+				</DatePicker>
+
+				<Controller
+					control={control}
+					name="expenditure"
+					render={({ field }) => (
+						<FieldRoot
+							invalid={!!errors.expenditure}
 						>
 
-							<SegmentGroupIndicator />
+							<SegmentGroupRoot
+								name={field.name}
+								onBlur={field.onBlur}
+								size={"lg"}
+								value={isExpenditureToExpenseValue(field.value)}
+								onValueChange={({value}) => field.onChange(expenseValueToIsExpenditure(value))}
+							>
 
-							<SegmentGroupItems
-								className={"cursor-pointer"}
-								items={expenseOrIncomeOption}
-							/>
-					  	</SegmentGroupRoot>
+								<SegmentGroupIndicator />
 
-						<FieldErrorText>{errors.isExpenditure?.message}</FieldErrorText>
-					</FieldRoot>
-				)}
-			/>
-		</FieldsetRoot>
+								<SegmentGroupItems
+									className={"cursor-pointer"}
+									items={expenseOrIncomeOption}
+								/>
+							</SegmentGroupRoot>
+
+							<FieldErrorText>{errors.expenditure?.message}</FieldErrorText>
+						</FieldRoot>
+					)}
+				/>
+			</FieldsetRoot>
+		</form>
 	)
 }

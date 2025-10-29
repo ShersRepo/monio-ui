@@ -5,6 +5,7 @@ import AppHeader from '@/component/page-layout/header';
 import { AuthProvider } from '@/global/authentication-provider';
 import { Provider } from "@/components/ui/provider"
 import { Box } from '@chakra-ui/react';
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -28,16 +29,20 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<Provider>
-				<body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full w-full`}>
-					<AuthProvider>
-						<AppHeader />
-						<Box p="10">
-							{children}
-						</Box>
-					</AuthProvider>
-				</body>
-			</Provider>
+
+			<body className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-full w-full`}>
+
+				<Provider>
+
+					<AppHeader />
+
+					<Box p="10">
+						{children}
+					</Box>
+
+					<Toaster position="bottom-right" />
+				</Provider>
+			</body>
     	</html>
 	);
 }
