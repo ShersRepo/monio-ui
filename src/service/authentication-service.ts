@@ -22,6 +22,14 @@ export async function authenticate(username: string, password: string): Promise<
 	)
 }
 
+export async function logout(): Promise<ApiResponse<null>> {
+	return await apiPOST<null, null>(
+		"/auth/logout",
+		null,
+		false
+	)
+}
+
 export interface AuthServiceState {
 	user: UserAccount | null,
 	loading: boolean,
@@ -33,8 +41,8 @@ export interface AuthServiceState {
 
 export function useAuth(): AuthServiceState {
 	const [ user, setUser ] = useState<UserAccount | null>( null );
-	const [ loading, setLoading ] = useState<boolean>( true );
-	const [ pageLoading, setPageLoading ] = useState<boolean>( true );
+	const [ loading ] = useState<boolean>( true );
+	const [ pageLoading ] = useState<boolean>( true );
 	const [ error, setError ] = useState<string | null>( null );
 
 	const refreshAuthStatus = async () => {
@@ -54,18 +62,15 @@ export function useAuth(): AuthServiceState {
 	}, [])
 
 	const logout = async () => {
-		try {
-			apiPOST<{}, null>( '/auth/logout', {}, false )
-				.then(response => {
-					if (response.status === 204) {
-						toast.success("Logged out");
-					}
-				});
-				setUser(null);
-		} catch (error) {
-			setUser(null);
-			setError('Logged out');
-		}
+		apiPOST<{}, null>( '/auth/logout', {}, false )
+			.then(response => {
+				if (response.status === 204) {
+					setUser(null);
+					toast.success("Logged out");
+				}
+			}).catch(error => {
+				setError('An error occurred while logging out. Please refresh the page');
+			});
 	}
 
 	return {

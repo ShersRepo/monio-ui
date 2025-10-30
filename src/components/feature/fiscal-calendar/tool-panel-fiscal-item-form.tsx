@@ -70,7 +70,6 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 
 	const handleFormBlur = useCallback(() => {
 		const values: FiscalItemDraftDto = getValues();
-		//console.log(values, fiscalItemInEdit);
 		if (values.id) {
 			storeDraftItemChange(values);
 		} else if (values !== fiscalItemInEdit) {

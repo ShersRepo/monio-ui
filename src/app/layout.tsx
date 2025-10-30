@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AppHeader from '@/component/page-layout/header';
-import { AuthProvider } from '@/global/authentication-provider';
 import { Provider } from "@/components/ui/provider"
 import { Box } from '@chakra-ui/react';
 import { Toaster } from 'react-hot-toast';

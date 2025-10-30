@@ -12,7 +12,9 @@ export default function ProfileAvatar({
 
 	return (
 		<AvatarGroup>
+
 			<AvatarRoot size={"lg"} onClick={avatarClickEvent}>
+
 				<AvatarFallback name={user.firstName + " " + user.lastName}>
 					{/*<AvatarImage></AvatarImage>*/}
 				</AvatarFallback>
