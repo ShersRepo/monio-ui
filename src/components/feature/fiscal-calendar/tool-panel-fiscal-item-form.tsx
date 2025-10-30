@@ -53,7 +53,6 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 	const expenseOrIncomeOption: ExpenseOrIncome[] = ["Expense", "Income"];
 	const { setFiscalItemInEdit, addNewFiscalItem, fiscalItemInEdit, updateFiscalItem } = useFiscalItemDraftProvider();
 	const { ledger } = useLedgerProvider();
-
 	const { control, register, reset, formState: { errors }, setError, getValues } = useForm<FiscalItemDraftDto>({
 		defaultValues: {
 			id: null,
@@ -67,13 +66,17 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 		resolver: zodResolver(newFiscalItemDtoSchema),
 		mode: 'onBlur',
 	});
+	const [lastSave, setLastSave] = React.useState<FiscalItemDraftDto | null>(null);
 
 	const handleFormBlur = useCallback(() => {
 		const values: FiscalItemDraftDto = getValues();
-		if (values.id) {
-			storeDraftItemChange(values);
-		} else if (values !== fiscalItemInEdit) {
-			storeNewDraftItem(values);
+		if (JSON.stringify(lastSave) === JSON.stringify(values)) {
+			if (values.id) {
+				storeUpdatedDraftItem(values);
+			} else if (values !== fiscalItemInEdit) {
+				storeNewDraftItem(values);
+			}
+			setLastSave(getValues());
 		}
 	}, [fiscalItemInEdit, getValues, updateFiscalItem, setFiscalItemInEdit, addNewFiscalItem]);
 
@@ -85,11 +88,7 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 					reset(
 						response.data,
 						{
-							keepDirty: true,
 							keepErrors: true,
-							keepIsSubmitted: true,
-							keepTouched: true,
-							keepDirtyValues: true
 						}
 					);
 					setFiscalItemInEdit(response.data);
@@ -100,19 +99,24 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 					toast.error("Please fix the errors before saving changes");
 				}
 				else if (response.status === 400) {
-					console.log(response.errors);
 					toast.error("Error creating draft item");
 				}
 			});
 	}
 
-	const storeDraftItemChange = (values: FiscalItemDraftDto): void => {
+	const storeUpdatedDraftItem = (values: FiscalItemDraftDto): void => {
 		const itemToStore: FiscalItemDraftDto = { ...values };
 		itemToStore.ledgerId = ledger?.id ?? null;
 
 		apiPATCH<FiscalItemDraftDto, FiscalItemDraftDto>('/ledger/fiscal/fiscal-draft', itemToStore, false)
 			.then((response) => {
 				if (response.status === 200 && response.data != null) {
+					reset(
+						response.data,
+						{
+							keepErrors: true,
+						}
+					);
 					updateFiscalItem(response.data);
 				} else if (response.errors?.length > 0) {
 					setFormErrors(response.errors, setError);
