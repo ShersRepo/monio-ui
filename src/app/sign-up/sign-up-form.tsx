@@ -27,16 +27,13 @@ export default function SignupForm(): React.ReactNode {
 	});
 
 	const onFormSubmit = handleSubmit((form: SignupFormDto): void => {
-		apiPOST("/user", form)
-			.then(res => {
-				if (res.status === 204) {
+		apiPOST<SignupFormDto, null>("/user", form)
+			.then(response => {
+				if (response.status === 204) {
 					toast.success("Signed in");
 				} else {
 					toast.error("Account creation failed");
 				}
-			})
-			.catch(() => {
-				toast.error("Account creation failed");
 			});
 	});
 

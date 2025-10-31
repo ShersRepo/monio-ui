@@ -1,5 +1,5 @@
 import { ApiResponse } from '@/service/model/api-response';
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import toast from 'react-hot-toast';
 import { APP_CONFIG } from '../../env.config';
 
@@ -39,8 +39,12 @@ export const apiPOST = async <P, T> (url: string, data: P, withErrorMessage: boo
 		if (withErrorMessage) {
 			toast.error(API_FAIL_RESPONSE.message);
 		}
-		const errorResponse = error as AxiosError<ApiResponse<T>>;
-		return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+		if (isAxiosError(error)) {
+			const errorResponse = error as AxiosError<ApiResponse<T>>;
+			return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+		} else {
+			return API_FAIL_RESPONSE;
+		}
 	}
 }
 
@@ -57,9 +61,12 @@ export const apiPATCH = async <P, T> (url: string, data: P, withErrorMessage: bo
 		if (withErrorMessage) {
 			toast.error(API_FAIL_RESPONSE.message);
 		}
-		const errorResponse = error as AxiosError<ApiResponse<T>>;
-		console.log(errorResponse);
-		return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+		if (isAxiosError(error)) {
+			const errorResponse = error as AxiosError<ApiResponse<T>>;
+			return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+		} else {
+			return API_FAIL_RESPONSE;
+		}
 	}
 }
 
@@ -75,8 +82,12 @@ export const apiGET = async <T> (url: string, withErrorMessage: boolean = true):
 		if (withErrorMessage) {
 			toast.error(API_FAIL_RESPONSE.message);
 		}
-		const errorResponse = error as AxiosError<T>;
-		return { ...API_FAIL_RESPONSE, ...errorResponse?.response?.data } as ApiResponse<T>;
+		if (isAxiosError(error)) {
+			const errorResponse = error as AxiosError<ApiResponse<T>>;
+			return errorResponse?.response?.data ?? API_FAIL_RESPONSE;
+		} else {
+			return API_FAIL_RESPONSE;
+		}
 	}
 }
 

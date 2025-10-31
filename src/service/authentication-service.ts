@@ -67,9 +67,9 @@ export function useAuth(): AuthServiceState {
 				if (response.status === 204) {
 					setUser(null);
 					toast.success("Logged out");
+				} else if (response.status === 401) {
+					toast.error("Something went wrong. Please refresh the page and try again");
 				}
-			}).catch(error => {
-				setError('An error occurred while logging out. Please refresh the page');
 			});
 	}
 
