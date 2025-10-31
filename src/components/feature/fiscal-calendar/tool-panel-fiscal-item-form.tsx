@@ -70,12 +70,13 @@ export default function ToolPanelFiscalItemForm(): React.ReactNode {
 
 	const handleFormBlur = useCallback(() => {
 		const values: FiscalItemDraftDto = getValues();
-		if (JSON.stringify(lastSave) === JSON.stringify(values)) {
-			if (values.id) {
-				storeUpdatedDraftItem(values);
-			} else if (values !== fiscalItemInEdit) {
-				storeNewDraftItem(values);
-			}
+		const isNew: boolean = !values.id;
+		const hasChanged: boolean = JSON.stringify(lastSave) !== JSON.stringify(values);
+		if (isNew) {
+			storeNewDraftItem(values);
+			setLastSave(getValues());
+		} else if (hasChanged) {
+			storeUpdatedDraftItem(values);
 			setLastSave(getValues());
 		}
 	}, [fiscalItemInEdit, getValues, updateFiscalItem, setFiscalItemInEdit, addNewFiscalItem]);
