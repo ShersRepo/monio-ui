@@ -1,8 +1,11 @@
+"use client";
+
 import React from 'react';
-import { Box } from '@chakra-ui/react';
+import SignInPage from '@/components/feature/user-profile/sign-in-page';
 
 export default function SignIn(): React.ReactNode {
 
-	return <Box w={"1/6"}>Hello</Box>;
-
+	return (
+		<SignInPage  />
+	);
 }
