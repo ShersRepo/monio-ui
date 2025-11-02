@@ -34,7 +34,7 @@ export interface AuthServiceState {
 	user: UserAccount | null,
 	loading: boolean,
 	pageLoading: boolean,
-	error: string | null,
+	error: AuthenticationError | null,
 	refreshAuthStatus: () => Promise<void>,
 	logout: () => Promise<void>
 }
@@ -43,18 +43,18 @@ export function useAuth(): AuthServiceState {
 	const [ user, setUser ] = useState<UserAccount | null>( null );
 	const [ loading ] = useState<boolean>( true );
 	const [ pageLoading ] = useState<boolean>( true );
-	const [ error, setError ] = useState<string | null>( null );
+	const [ error, setError ] = useState<AuthenticationError | null>( null );
 
 	const refreshAuthStatus = async () => {
-		apiGET<UserAccount>("/auth/status", false).then(response => {
-			if (response.status === 200) {
-				setUser( response.data );
-			} else {
-				setUser(null);
-			}
-		}).catch(() => {
-			setUser( null )
-		});
+		apiGET<UserAccount>("/auth/status", false)
+			.then(response => {
+				if (response.status === 200) {
+					setUser(response.data);
+				} else {
+					setError(AuthenticationError.LOGIN_FAILED);
+					setUser(null);
+				}
+			});
 	};
 
 	useEffect(() => {
@@ -68,6 +68,7 @@ export function useAuth(): AuthServiceState {
 					setUser(null);
 					toast.success("Logged out");
 				} else if (response.status === 401) {
+					setError(AuthenticationError.LOGOUT_FAILED);
 					toast.error("Something went wrong. Please refresh the page and try again");
 				}
 			});

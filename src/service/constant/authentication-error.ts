@@ -1,0 +1,5 @@
+enum AuthenticationError {
+	LOGOUT_FAILED,
+	CREDENTIALS_INVALID,
+	LOGIN_FAILED
+}
