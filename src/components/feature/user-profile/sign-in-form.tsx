@@ -8,6 +8,7 @@ import { authenticate } from '@/service/authentication-service';
 import toast from 'react-hot-toast';
 import { Stack } from '@chakra-ui/react/stack';
 import { Input } from '@chakra-ui/react/input';
+import { useLoader } from '@/global/app-loading-provider';
 
 type SignInFormProps = Readonly<{
     onSuccessfulLogin: () => Promise<void>;
@@ -25,6 +26,7 @@ export default function SignInForm({
 		titleElement = <DefaultTitle />
 	}: SignInFormProps): React.ReactNode {
 
+	const { showLoader, hideLoader } = useLoader();
 	const { register, handleSubmit } = useForm<UserAuthenticationForm>({
 		defaultValues: {
 			username: '',
@@ -35,6 +37,7 @@ export default function SignInForm({
 	});
 
 	async function attemptSignIn (user: Readonly<UserAuthenticationForm>): Promise<void> {
+		showLoader()
 		authenticate(user.username, user.password)
 			.then(res => {
 				if (res.status === 204) {
@@ -48,7 +51,7 @@ export default function SignInForm({
 					toast.error("Failed to sign in");
 				}
 			})
-			.catch(() => toast.error("Failed to sign in. Please check your credentials and try again"));
+			.finally(() => hideLoader());
 	}
 
 	return (

@@ -4,7 +4,6 @@ import { ApiResponse } from '@/service/model/api-response';
 import { UserAccount } from '@/service/model/user-account';
 import { useEffect, useState } from 'react';
 import { apiGET, apiPOST } from '@/service/api-service';
-import toast from 'react-hot-toast';
 
 interface AuthenticateRequest {
 	username: string,
@@ -36,7 +35,6 @@ export interface AuthServiceState {
 	pageLoading: boolean,
 	error: AuthenticationError | null,
 	refreshAuthStatus: () => Promise<void>,
-	logout: () => Promise<void>
 }
 
 export function useAuth(): AuthServiceState {
@@ -61,26 +59,12 @@ export function useAuth(): AuthServiceState {
 		refreshAuthStatus();
 	}, [])
 
-	const logout = async () => {
-		apiPOST<{}, null>( '/auth/logout', {}, false )
-			.then(response => {
-				if (response.status === 204) {
-					setUser(null);
-					toast.success("Logged out");
-				} else if (response.status === 401) {
-					setError(AuthenticationError.LOGOUT_FAILED);
-					toast.error("Something went wrong. Please refresh the page and try again");
-				}
-			});
-	}
-
 	return {
 		user,
 		loading,
 		pageLoading,
 		error,
 		refreshAuthStatus,
-		logout
 	};
 }
 

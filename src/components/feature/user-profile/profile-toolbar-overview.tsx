@@ -18,19 +18,18 @@ const ProfileView = ({
 
 	const logoutUser = (): void => {
 		logout()
-		.then(res => {
-			if (res.status === 204) {
-				onSuccessfulLogout()
-					.then(() => {
-						toast.success("Logged out");
-					}).catch(() => {
-						toast.error("Something went wrong. Please refresh the page");
-					});
-			} else {
-				toast.error("Something went wrong. Please refresh the page");
-			}
-		})
-		.catch(() => toast.error("Something went wrong. Please refresh the page"));
+			.then(res => {
+				if (res.status === 204) {
+					onSuccessfulLogout()
+						.then(() => {
+							toast.success("Logged out");
+						}).catch(() => {
+							toast.error("Something went wrong. Please refresh the page");
+						});
+				} else {
+					toast.error("Something went wrong. Please refresh the page");
+				}
+			});
 	}
 
 	return 	(
