@@ -12,7 +12,7 @@ interface LoaderContextType {
 const LoaderContext = createContext<LoaderContextType>({
 	isLoading: false,
 	showLoader: () => {},
-	hideLoader: () => {}
+	hideLoader: () => {},
 });
 
 export function useLoader() {
